@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Pause, Play, RotateCw, Mic, Send, Edit2, Trash2, Square, CheckSquare, X, LogOut, BarChart, CalendarDays, List, User, Settings, Check, Clock, Coffee, Plus, Minus, BookOpen, MapPin, UserSquare, Calendar } from 'lucide-react';
-
+import { 
+  Cloud, Sun, CloudRain, CloudLightning, Thermometer, Wind 
+} from 'lucide-react';
 // --- КОНСТАНТЫ СТИЛЯ (Wireframe) ---
 const BORDER_STYLE = 'border-2 border-white/80';
 const ACCENT_COLOR = 'text-white';
@@ -659,32 +661,29 @@ const SettingsPage = ({ t, pomodoroDuration, setPomodoroDuration, breakDuration,
 };
 
 // --- ГЛАВНЫЙ КОМПОНЕНТ ---
-
 export default function App() {
   const [lang, setLang] = useState('ru');
   const t = translations[lang];
-
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekDays, setWeekDays] = useState([]);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [tasks, setTasks] = useState({
-      // Инициализация задач для ПН (для визуального соответствия референсу)
-      'ПН': [ 
-          { id: 1, text: 'ЗАЛ', done: false, time: null, dateKey: 'ПН' },
-          { id: 2, text: 'МАГАЗИН', done: true, time: null, dateKey: 'ПН' },
-          { id: 3, text: 'ВСТРЕЧА 16:30', done: false, time: '16:30', dateKey: 'ПН' },
-      ],
-      'ВТ': [
-          { id: 4, text: 'ПРОЕКТ NOVAI', done: false, time: null, dateKey: 'ВТ' }
-      ]
+    // Инициализация задач для ПН (для визуального соответствия референсу)
+    'ПН': [
+      { id: 1, text: 'ЗАЛ', done: false, time: null, dateKey: 'ПН' },
+      { id: 2, text: 'МАГАЗИН', done: true, time: null, dateKey: 'ПН' },
+      { id: 3, text: 'ВСТРЕЧА 16:30', done: false, time: '16:30', dateKey: 'ПН' },
+    ],
+    'ВТ': [
+      { id: 4, text: 'ПРОЕКТ NOVAI', done: false, time: null, dateKey: 'ВТ' }
+    ]
   });
   const [schedule, setSchedule] = useState({
-      'ПН': [
-          { id: 101, num: 1, name: 'МАТЕМАТИКА', teacher: 'СИДОРОВ', room: '301', timeStart: '9:00', timeEnd: '10:30' },
-          { id: 102, num: 2, name: 'ФИЗИКА', teacher: 'ИВАНОВА', room: '405', timeStart: '10:40', timeEnd: '12:10' }
-      ]
+    'ПН': [
+      { id: 101, num: 1, name: 'МАТЕМАТИКА', teacher: 'СИДОРОВ', room: '301', timeStart: '9:00', timeEnd: '10:30' },
+      { id: 102, num: 2, name: 'ФИЗИКА', teacher: 'ИВАНОВА', room: '405', timeStart: '10:40', timeEnd: '12:10' }
+    ]
   });
-
   const [newTask, setNewTask] = useState('');
   const [showInput, setShowInput] = useState(false);
   const [pomodoroDuration, setPomodoroDuration] = useState(25);
@@ -695,6 +694,10 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('chat');
   const [chatInput, setChatInput] = useState('');
   const [editingTask, setEditingTask] = useState(null); // {id, text, dayKey}
+
+  // ✅ 🔥 НОВЫЕ ХУКИ ПОГОДЫ
+  const [weather, setWeather] = useState(null);
+  const [loadingWeather, setLoadingWeather] = useState(true);
 
   // Обновление таймера при смене настроек или типа
   useEffect(() => {
@@ -709,33 +712,29 @@ export default function App() {
   // Инициализация недели
   useEffect(() => {
     const initWeek = (locale) => {
-        const dayLabels = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-        const dayLabelsEn = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-        const currentLabels = locale === 'ru' ? dayLabels : dayLabelsEn;
-
-        // Фиксируем дату на 24 Ноября 2025 для соответствия референсу
-        const date = new Date('2025-11-24T12:00:00'); 
-        
-        const day = date.getDay(); // 0 (ВС) to 6 (СБ). 24 Ноября 2025 - Понедельник (1)
-        const diff = day === 0 ? -6 : 1 - day; // Сдвиг к ПН
-
-        const monday = new Date(date);
-        monday.setDate(date.getDate() + diff);
-
-        const days = [];
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(monday);
-            d.setDate(monday.getDate() + i);
-            days.push({
-                label: currentLabels[i],
-                number: d.getDate(),
-                fullDate: d.toISOString().split('T')[0],
-                formatted: d.toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace('г.', '').trim(),
-                isSelected: i === 0,
-            });
-        }
-        setWeekDays(days);
-        setSelectedDayIndex(0);
+      const dayLabels = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+      const dayLabelsEn = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+      const currentLabels = locale === 'ru' ? dayLabels : dayLabelsEn;
+      // Фиксируем дату на 24 Ноября 2025 для соответствия референсу
+      const date = new Date('2025-11-24T12:00:00');
+      const day = date.getDay(); // 0 (ВС) to 6 (СБ). 24 Ноября 2025 - Понедельник (1)
+      const diff = day === 0 ? -6 : 1 - day; // Сдвиг к ПН
+      const monday = new Date(date);
+      monday.setDate(date.getDate() + diff);
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        days.push({
+          label: currentLabels[i],
+          number: d.getDate(),
+          fullDate: d.toISOString().split('T')[0],
+          formatted: d.toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace('г.', '').trim(),
+          isSelected: i === 0,
+        });
+      }
+      setWeekDays(days);
+      setSelectedDayIndex(0);
     };
     initWeek(lang);
   }, [lang]);
@@ -747,11 +746,75 @@ export default function App() {
       return () => clearInterval(id);
     }
     if (timer === 0) {
-        setIsRunning(false);
-        // Можно добавить уведомление о завершении
-        console.log(`Таймер ${timerType === 'pomodoro' ? 'Pomodoro' : 'Перерыва'} завершен!`);
+      setIsRunning(false);
+      // Можно добавить уведомление о завершении
+      console.log(`Таймер ${timerType === 'pomodoro' ? 'Pomodoro' : 'Перерыва'} завершен!`);
     }
   }, [isRunning, timer, timerType]);
+
+  // ✅ 🔥 USEEFFECT ПОГОДЫ (добавлен!)
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        setLoadingWeather(true);
+        // Бесплатный API без API ключа (Open-Meteo)
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=47.0105&longitude=28.8638&current_weather=true&hourly=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=Europe/Chisinau&forecast_days=1`
+        );
+        const data = await response.json();
+        const current = data.current_weather;
+        const today = data.daily;
+        
+        const weatherCodeMap = {
+          0: Sun,      // Ясно
+          1: Sun,      // Преимущественно ясно
+          2: Cloud,    // Переменная облачность
+          3: Cloud,    // Облачно
+          45: Cloud,   // Туман
+          48: Cloud,   // Изморось
+          51: CloudRain, // Моросящий дождь
+          53: CloudRain, // Дождь
+          61: CloudRain, // Небольшой дождь
+          63: CloudRain, // Умеренный дождь
+          65: CloudRain, // Сильный дождь
+          71: CloudRain, // Снег
+          80: CloudRain, // Ливень
+          95: CloudLightning // Гроза
+        };
+        
+        setWeather({
+          temp: Math.round(current.temperature),
+          feelsLike: Math.round(current.temperature),
+          condition: weatherCodeMap[current.weathercode] || Cloud,
+          windSpeed: Math.round(current.windspeed),
+          windDir: ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'][Math.round(current.winddirection / 45)],
+          maxTemp: Math.round(today.temperature_2m_max[0]),
+          minTemp: Math.round(today.temperature_2m_min[0]),
+          precipProb: today.precipitation_probability_max[0]
+        });
+      } catch (error) {
+        console.error('Ошибка погоды:', error);
+        // Fallback данные для Молдовы
+        setWeather({
+          temp: 8,
+          feelsLike: 6,
+          condition: CloudRain,
+          windSpeed: 12,
+          windDir: '↘',
+          maxTemp: 10,
+          minTemp: 4,
+          precipProb: 70
+        });
+      } finally {
+        setLoadingWeather(false);
+      }
+    };
+    
+    fetchWeather();
+    // Обновление каждые 30 минут
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const formatTime = (s) => {
     const m = String(Math.floor(s / 60)).padStart(2, '0');
@@ -759,70 +822,120 @@ export default function App() {
     return `${m}:${sec}`;
   };
 
+  // ✅ 🔥 КОМПОНЕНТ ВИДЖЕТА ПОГОДЫ (добавлен!)
+  const WeatherWidget = () => (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ delay: 0.5 }}
+      className={`${BORDER_STYLE} rounded-xl p-4 bg-black/20 backdrop-blur-sm`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs uppercase tracking-wider text-white/60">КИШИНЕВ</span>
+        <span className="text-xs text-white/50">сегодня</span>
+      </div>
+      {loadingWeather ? (
+        <div className="flex items-center justify-center py-6">
+          <div className="w-6 h-6 border-2 border-white/30 border-t-white/60 rounded-full animate-spin"></div>
+        </div>
+      ) : weather ? (
+        <>
+          {/* Температура + иконка */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <weather.condition size={32} className="text-white/80" />
+                {weather.precipProb > 50 && (
+                  <CloudRain size={16} className="absolute -top-1 -right-1 text-blue-400 animate-pulse" />
+                )}
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-white">{weather.temp}°</p>
+                <p className="text-xs text-white/60">ощущ. {weather.feelsLike}°</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-white/70">{weather.maxTemp}° / {weather.minTemp}°</p>
+              <p className="text-xs text-white/50">макс/мин</p>
+            </div>
+          </div>
+          {/* Детали */}
+          <div className="space-y-2 text-xs text-white/60 border-t border-white/10 pt-3">
+            <div className="flex justify-between items-center">
+              <Wind size={12} className="text-white/50" />
+              <span>{weather.windSpeed} км/ч {weather.windDir}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <Thermometer size={12} className="text-white/50" />
+              <span>влажность {weather.precipProb}%</span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <p className="text-xs text-white/40 text-center py-4">Ошибка погоды</p>
+      )}
+    </motion.div>
+  );
+
   const currentDay = weekDays[selectedDayIndex];
   // Задачи теперь хранятся по меткам дня ('ПН', 'ВТ', ...)
   const currentTasks = currentDay?.label ? (tasks[currentDay.label] || []) : [];
   const completed = currentTasks.filter(t => t.done).length;
   const total = currentTasks.length;
   // Фиксируем прогресс для стиля UI
-  const progress = total > 0 ? Math.round((completed / total) * 100) : 67; 
+  const progress = total > 0 ? Math.round((completed / total) * 100) : 67;
   // Форматируем дату (убрана "г." и гарантированно одна строка)
   const displayedDate = currentDay?.formatted.toUpperCase().replace(/\./g, '') || 'ПОНЕДЕЛЬНИК, 24 НОЯБРЯ 2025';
 
   const addTask = useCallback(() => {
     if (!newTask.trim() || !currentDay?.label) return;
-    
     // Если мы в режиме редактирования
     if (editingTask) {
-        setTasks(prev => ({
-            ...prev,
-            [editingTask.dayKey]: prev[editingTask.dayKey].map(t => 
-                t.id === editingTask.id ? { ...t, text: newTask.trim().toUpperCase() } : t
-            )
-        }));
-        setEditingTask(null);
+      setTasks(prev => ({
+        ...prev,
+        [editingTask.dayKey]: prev[editingTask.dayKey].map(t =>
+          t.id === editingTask.id ? { ...t, text: newTask.trim().toUpperCase() } : t
+        )
+      }));
+      setEditingTask(null);
     } else {
-        // Режим добавления
-        setTasks(prev => ({
-            ...prev,
-            [currentDay.label]: [...(prev[currentDay.label] || []), { id: Date.now(), text: newTask.trim().toUpperCase(), done: false, dateKey: currentDay.label }]
-        }));
+      // Режим добавления
+      setTasks(prev => ({
+        ...prev,
+        [currentDay.label]: [...(prev[currentDay.label] || []), { id: Date.now(), text: newTask.trim().toUpperCase(), done: false, dateKey: currentDay.label }]
+      }));
     }
-    
     setNewTask('');
     setShowInput(false);
   }, [newTask, currentDay, editingTask]);
 
   const toggleTask = useCallback((id) => {
-      // Ищем задачу по всем дням, т.к. `AllTasksPage` показывает все
+    // Ищем задачу по всем дням, т.к. `AllTasksPage` показывает все
     let dayKeyToUpdate = Object.keys(tasks).find(day => tasks[day].some(t => t.id === id));
-    
     if (dayKeyToUpdate) {
-        setTasks(prev => ({
-            ...prev,
-            [dayKeyToUpdate]: prev[dayKeyToUpdate].map(t => t.id === id ? { ...t, done: !t.done } : t)
-        }));
+      setTasks(prev => ({
+        ...prev,
+        [dayKeyToUpdate]: prev[dayKeyToUpdate].map(t => t.id === id ? { ...t, done: !t.done } : t)
+      }));
     }
   }, [tasks]);
 
   const deleteTask = useCallback((id) => {
     let dayKeyToUpdate = Object.keys(tasks).find(day => tasks[day].some(t => t.id === id));
-    
     if (dayKeyToUpdate) {
-        setTasks(prev => ({
-            ...prev,
-            [dayKeyToUpdate]: prev[dayKeyToUpdate].filter(t => t.id !== id)
-        }));
+      setTasks(prev => ({
+        ...prev,
+        [dayKeyToUpdate]: prev[dayKeyToUpdate].filter(t => t.id !== id)
+      }));
     }
   }, [tasks]);
 
   const startEditTask = useCallback((task) => {
-      // Это нужно для передачи в правую панель
-      setEditingTask({ id: task.id, text: task.text, dayKey: task.dateKey });
-      setNewTask(task.text);
-      setShowInput(true);
+    // Это нужно для передачи в правую панель
+    setEditingTask({ id: task.id, text: task.text, dayKey: task.dateKey });
+    setNewTask(task.text);
+    setShowInput(true);
   }, []);
-
 
   const handleSend = useCallback(() => {
     if (!chatInput.trim()) return;
@@ -839,291 +952,312 @@ export default function App() {
   }
 
   const renderContent = () => {
-      switch (currentPage) {
-          case 'chat':
-              return <ChatMainView t={t} input={chatInput} setInput={setChatInput} handleSend={handleSend} />;
-          case 'stats':
-              return <StatsPage t={t} />;
-          case 'schedule':
-              return <SchedulerPage t={t} weekDays={weekDays} schedule={schedule} setSchedule={setSchedule} />;
-          case 'alltasks':
-              return <AllTasksPage tasks={tasks} toggleTask={toggleTask} deleteTask={deleteTask} t={t} />;
-          case 'profile':
-              return <ProfilePage t={t} />;
-          case 'settings':
-              return <SettingsPage 
-                t={t} 
-                pomodoroDuration={pomodoroDuration} 
-                setPomodoroDuration={setPomodoroDuration}
-                breakDuration={breakDuration}
-                setBreakDuration={setBreakDuration}
-                lang={lang}
-                setLang={setLang}
-              />;
-          default:
-              return <ChatMainView t={t} input={chatInput} setInput={setChatInput} handleSend={handleSend} />;
-      }
+    switch (currentPage) {
+      case 'chat':
+        return <ChatMainView t={t} input={chatInput} setInput={setChatInput} handleSend={handleSend} />;
+      case 'stats':
+        return <StatsPage t={t} />;
+      case 'schedule':
+        return <SchedulerPage t={t} weekDays={weekDays} schedule={schedule} setSchedule={setSchedule} />;
+      case 'alltasks':
+        return <AllTasksPage tasks={tasks} toggleTask={toggleTask} deleteTask={deleteTask} t={t} />;
+      case 'profile':
+        return <ProfilePage t={t} />;
+      case 'settings':
+        return <SettingsPage
+          t={t}
+          pomodoroDuration={pomodoroDuration}
+          setPomodoroDuration={setPomodoroDuration}
+          breakDuration={breakDuration}
+          setBreakDuration={setBreakDuration}
+          lang={lang}
+          setLang={setLang}
+        />;
+      default:
+        return <ChatMainView t={t} input={chatInput} setInput={setChatInput} handleSend={handleSend} />;
+    }
   };
-
 
   return (
     <div className={`h-screen w-screen bg-black text-white ${FONT_CLASS} p-3 md:p-6 overflow-hidden`}>
       {/* ГЛАВНАЯ РАМКА ПРИЛОЖЕНИЯ */}
       <div className={`h-full w-full ${BORDER_STYLE} rounded-xl p-4 flex gap-4`}>
-        
-        {/* ЛЕВАЯ КОЛОНКА (НАВИГАЦИЯ) */}
+        {/* ✅ 🔥 ЛЕВАЯ КОЛОНКА (НАВИГАЦИЯ + ПОГОДА) */}
         <nav className="w-48 md:w-64 flex-shrink-0 flex flex-col justify-between pt-4 pb-4">
           <div className="space-y-8 md:space-y-12">
-            <h1 className="text-3xl md:text-4xl font-extrabold select-none hover:text-green-400 transition-colors cursor-pointer">{t.appName}</h1>
+            <h1 className={`text-3xl md:text-4xl font-extrabold select-none hover:text-green-400 transition-colors cursor-pointer ${FONT_CLASS}`}>
+              {t.appName}
+            </h1>
+            
+            {/* ✅ НАВИГАЦИЯ */}
             <div className="space-y-4 md:space-y-6 text-base md:text-xl">
               {[
-                  { key: 'chat', label: t.appName, icon: Menu },
-                  { key: 'schedule', label: t.schedule, icon: CalendarDays },
-                  { key: 'alltasks', label: t.allTasks, icon: List },
-                  { key: 'stats', label: t.stats, icon: BarChart },
-                  { key: 'profile', label: t.profile, icon: User },
+                { key: 'chat', label: t.appName, icon: Menu },
+                { key: 'schedule', label: t.schedule, icon: CalendarDays },
+                { key: 'alltasks', label: t.allTasks, icon: List },
+                { key: 'stats', label: t.stats, icon: BarChart },
+                { key: 'profile', label: t.profile, icon: User },
               ].map(item => (
-                  <motion.button 
-                      key={item.key}
-                      onClick={() => setCurrentPage(item.key)} 
-                      whileHover={{ scale: 1.05, originX: 0 }}
-                      className={`block text-left transition-colors flex items-center gap-3 ${
-                          currentPage === item.key ? 'text-white border-b border-white' : 'text-white/60 hover:text-white/90'
-                      }`}
-                  >
-                      <item.icon size={ICON_SIZE - 4} />{item.label}
-                  </motion.button>
+                <motion.button
+                  key={item.key}
+                  onClick={() => setCurrentPage(item.key)}
+                  whileHover={{ scale: 1.05, originX: 0 }}
+                  className={`block text-left transition-colors flex items-center gap-3 w-full ${
+                    currentPage === item.key 
+                      ? 'text-white border-b border-white' 
+                      : 'text-white/60 hover:text-white/90'
+                  }`}
+                >
+                  <item.icon size={ICON_SIZE - 4} />
+                  <span className="truncate">{item.label}</span>
+                </motion.button>
               ))}
             </div>
+
+            {/* ✅ 🔥 ВИДЖЕТ ПОГОДЫ (НАД настройками!) */}
+            <WeatherWidget />
           </div>
           
+          {/* ✅ НИЖНЯЯ НАВИГАЦИЯ */}
           <div className="space-y-4 md:space-y-6 text-base md:text-xl">
-            <button onClick={() => setCurrentPage('settings')} className={`block text-left transition-colors flex items-center gap-3 ${
-                currentPage === 'settings' ? 'text-white border-b border-white' : 'text-white/60 hover:text-white/90'
-            }`}>
-                 <Settings size={ICON_SIZE - 4} />{t.settings}
+            <button 
+              onClick={() => setCurrentPage('settings')} 
+              className={`block text-left transition-colors flex items-center gap-3 w-full ${
+                currentPage === 'settings' 
+                  ? 'text-white border-b border-white' 
+                  : 'text-white/60 hover:text-white/90'
+              }`}
+            >
+              <Settings size={ICON_SIZE - 4} />
+              <span className="truncate">{t.settings}</span>
             </button>
-            <button className="block text-left text-red-500/80 hover:text-red-500 flex items-center gap-3">
-              <LogOut size={ICON_SIZE - 4} />{t.logout}
+            <button className="block text-left text-red-500/80 hover:text-red-500 flex items-center gap-3 w-full">
+              <LogOut size={ICON_SIZE - 4} />
+              <span className="truncate">{t.logout}</span>
             </button>
           </div>
         </nav>
 
         {/* ЦЕНТРАЛЬНАЯ КОЛОНКА (ЧАТ/КОНТЕНТ) */}
         <main className={`flex-1 ${BORDER_STYLE} rounded-xl overflow-hidden flex flex-col`}>
-            {/* Кнопка "СКРЫТЬ ЧАТ" */}
-            <div className="flex justify-center -translate-y-4">
-                <motion.button 
-                    whileHover={{ scale: 1.05 }}
-                    onClick={() => setCurrentPage(currentPage === 'chat' ? 'schedule' : 'chat')} 
-                    className="text-white/80 text-xs px-4 py-1 border border-white/80 rounded-full bg-black hover:text-white transition-colors flex items-center"
-                >
-                    {currentPage === 'chat' ? t.hideChat : t.showChat} <Clock size={12} className="ml-1" />
-                </motion.button>
-            </div>
-            
-            <AnimatePresence mode="wait">
-              <motion.div
-                  key={currentPage}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex-1 h-full w-full"
-              >
-                  {renderContent()}
-              </motion.div>
-            </AnimatePresence>
+          {/* Кнопка "СКРЫТЬ ЧАТ" */}
+          <div className="flex justify-center -translate-y-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              onClick={() => setCurrentPage(currentPage === 'chat' ? 'schedule' : 'chat')}
+              className="text-white/80 text-xs px-4 py-1 border border-white/80 rounded-full bg-black hover:text-white transition-colors flex items-center"
+            >
+              {currentPage === 'chat' ? t.hideChat : t.showChat} <Clock size={12} className="ml-1" />
+            </motion.button>
+          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentPage}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex-1 h-full w-full"
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* ПРАВАЯ КОЛОНКА (ТАЙМЕР И ЗАДАЧИ) */}
         <aside className="w-64 md:w-80 flex-shrink-0 flex flex-col items-end pt-4 space-y-8">
-            {/* ТАЙМЕР */}
-            <div className="w-full flex justify-end items-center gap-4">
-                {/* Метка типа таймера */}
-                <span className={`text-base font-light ${timerType === 'break' ? 'text-green-400' : 'text-white/70'}`}>
-                    {timerType === 'pomodoro' ? t.timerPomodoro : t.timerBreak}
-                </span>
-
-                <div className="flex items-center gap-4 text-5xl md:text-6xl">
-                    {formatTime(timer)}
-                </div>
+          {/* ТАЙМЕР */}
+          <div className="w-full flex justify-end items-center gap-4">
+            {/* Метка типа таймера */}
+            <span className={`text-base font-light ${timerType === 'break' ? 'text-green-400' : 'text-white/70'}`}>
+              {timerType === 'pomodoro' ? t.timerPomodoro : t.timerBreak}
+            </span>
+            <div className="flex items-center gap-4 text-5xl md:text-6xl">
+              {formatTime(timer)}
             </div>
-
-            {/* КНОПКИ УПРАВЛЕНИЯ ТАЙМЕРОМ */}
-            <div className="flex items-center gap-2 self-end">
-                {/* Кнопка Перерыв */}
-                <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setTimerType(timerType === 'pomodoro' ? 'break' : 'pomodoro')}
-                    className={`w-10 h-10 border-2 rounded-full flex items-center justify-center transition-colors ${timerType === 'break' ? 'border-green-400 text-green-400' : 'border-white/50 hover:border-white text-white/50 hover:text-white'}`}
-                    title={timerType === 'pomodoro' ? t.breakButton : t.pomodoroButton}
-                >
-                    <Coffee size={ICON_SIZE - 4} />
-                </motion.button>
-                
-                {/* Кнопка Старт/Пауза */}
-                <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => { if (timer === 0) setTimer(pomodoroDuration * 60); setIsRunning(!isRunning); }}
-                    className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${isRunning ? 'border-white/50 text-white/50' : 'border-white hover:bg-white hover:text-black'} transition-all`}
-                    title={isRunning ? 'Пауза' : 'Старт'}
-                >
-                    {isRunning ? <Pause size={ICON_SIZE - 4} /> : <Play size={ICON_SIZE - 4} className="ml-1" />}
-                </motion.button>
-                
-                {/* Кнопка Сброс */}
-                <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => { 
-                        setIsRunning(false); 
-                        setTimer(timerType === 'pomodoro' ? pomodoroDuration * 60 : breakDuration * 60); 
-                    }}
-                    className="w-10 h-10 border-2 border-white/50 rounded-full flex items-center justify-center hover:border-white transition-all text-white/50 hover:text-white"
-                    title="Сброс"
-                >
-                    <RotateCw size={ICON_SIZE - 4} />
-                </motion.button>
+          </div>
+          {/* КНОПКИ УПРАВЛЕНИЯ ТАЙМЕРОМ */}
+          <div className="flex items-center gap-2 self-end">
+            {/* Кнопка Перерыв */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setTimerType(timerType === 'pomodoro' ? 'break' : 'pomodoro')}
+              className={`w-10 h-10 border-2 rounded-full flex items-center justify-center transition-colors ${timerType === 'break' ? 'border-green-400 text-green-400' : 'border-white/50 hover:border-white text-white/50 hover:text-white'}`}
+              title={timerType === 'pomodoro' ? t.breakButton : t.pomodoroButton}
+            >
+              <Coffee size={ICON_SIZE - 4} />
+            </motion.button>
+            {/* Кнопка Старт/Пауза */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => { if (timer === 0) setTimer(pomodoroDuration * 60); setIsRunning(!isRunning); }}
+              className={`w-10 h-10 border-2 rounded-full flex items-center justify-center ${isRunning ? 'border-white/50 text-white/50' : 'border-white hover:bg-white hover:text-black'} transition-all`}
+              title={isRunning ? 'Пауза' : 'Старт'}
+            >
+              {isRunning ? <Pause size={ICON_SIZE - 4} /> : <Play size={ICON_SIZE - 4} className="ml-1" />}
+            </motion.button>
+            {/* Кнопка Сброс */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                setIsRunning(false);
+                setTimer(timerType === 'pomodoro' ? pomodoroDuration * 60 : breakDuration * 60);
+              }}
+              className="w-10 h-10 border-2 border-white/50 rounded-full flex items-center justify-center hover:border-white transition-all text-white/50 hover:text-white"
+              title="Сброс"
+            >
+              <RotateCw size={ICON_SIZE - 4} />
+            </motion.button>
+          </div>
+          {/* ДАТА */}
+          <div className="text-sm font-light text-right w-full border-b border-white/10 pb-4">
+            <div className="whitespace-nowrap overflow-hidden text-ellipsis w-full">
+              {displayedDate.toUpperCase()}
             </div>
-
-
-            {/* ДАТА */}
-            <div className="text-sm font-light text-right w-full border-b border-white/10 pb-4">
-                <div className="whitespace-nowrap overflow-hidden text-ellipsis w-full">
-                    {displayedDate.toUpperCase()}
-                </div>
-            </div>
-
-            {/* ДНИ НЕДЕЛИ */}
-            <div className="grid grid-cols-7 gap-1 w-full text-center text-lg mb-6">
-              {weekDays.map((day, i) => (
-                <motion.button
-                  key={i}
-                  onClick={() => handleDaySelect(i)}
-                  whileHover={{ scale: 1.1, color: '#ffffff' }}
-                  whileTap={{ scale: 0.9 }}
-                  className={`py-1 transition-colors ${selectedDayIndex === i ? 'text-white border-b-2 border-white' : 'text-white/50 hover:text-white/80'}`}
+          </div>
+          {/* ДНИ НЕДЕЛИ */}
+          <div className="grid grid-cols-7 gap-1 w-full text-center text-lg mb-6">
+            {weekDays.map((day, i) => (
+              <motion.button
+                key={i}
+                onClick={() => handleDaySelect(i)}
+                whileHover={{ scale: 1.1, color: '#ffffff' }}
+                whileTap={{ scale: 0.9 }}
+                className={`py-1 transition-colors ${selectedDayIndex === i ? 'text-white border-b-2 border-white' : 'text-white/50 hover:text-white/80'}`}
+              >
+                {day.label}
+              </motion.button>
+            ))}
+          </div>
+          {/* ЗАДАЧИ */}
+          <div className="flex-1 w-full space-y-4 overflow-y-auto custom-scrollbar-minimal">
+            <AnimatePresence mode="popLayout">
+              {currentTasks.map(task => (
+                <motion.div
+                  key={task.id}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: 50 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex justify-between items-center text-xl pb-2 border-b border-white/20"
                 >
-                  {day.label}
-                </motion.button>
+                  <span className={`font-medium ${task.done ? 'line-through text-white/40' : 'text-white'}`}>
+                    {task.text}
+                  </span>
+                  <div className="flex items-center space-x-3">
+                    <motion.button
+                      onClick={() => startEditTask(task)}
+                      whileHover={{ scale: 1.1, color: '#FCD34D' }}
+                      className="text-white/50"
+                    >
+                      <Edit2 size={ICON_SIZE - 4} />
+                    </motion.button>
+                    <motion.button
+                      onClick={() => deleteTask(task.id)}
+                      whileHover={{ scale: 1.1, color: '#EF4444' }}
+                      className="text-white/50"
+                    >
+                      <Trash2 size={ICON_SIZE - 4} />
+                    </motion.button>
+                    <motion.button
+                      onClick={() => toggleTask(task.id)}
+                      whileTap={{ scale: 0.9 }}
+                      className="transition-transform duration-100"
+                    >
+                      {task.done
+                        ? <CheckSquare size={ICON_SIZE - 4} className="text-white" />
+                        : <Square size={ICON_SIZE - 4} className="text-white/50 hover:text-white" />
+                      }
+                    </motion.button>
+                  </div>
+                </motion.div>
               ))}
-            </div>
-
-            {/* ЗАДАЧИ */}
-            <div className="flex-1 w-full space-y-4 overflow-y-auto custom-scrollbar-minimal">
-              <AnimatePresence mode="popLayout">
-                {currentTasks.map(task => (
-                  <motion.div
-                    key={task.id}
-                    layout
+              {/* ДОБАВЛЕНИЕ/РЕДАКТИРОВАНИЕ ЗАДАЧИ */}
+              <AnimatePresence mode="wait">
+                {(showInput || editingTask) ? (
+                  <motion.input
+                    key="task-input"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: 50 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex justify-between items-center text-xl pb-2 border-b border-white/20"
+                    exit={{ opacity: 0, y: 10 }}
+                    autoFocus
+                    value={newTask}
+                    onChange={e => setNewTask(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && addTask()}
+                    onBlur={() => !newTask.trim() && !editingTask && setShowInput(false)}
+                    className={`w-full ${INPUT_STYLE} text-xl border-b border-white/50 mt-4`}
+                    placeholder={editingTask ? 'РЕДАКТИРОВАНИЕ...' : t.newTaskPlaceholder}
+                  />
+                ) : (
+                  <motion.button
+                    key="add-task-btn"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    whileHover={{ opacity: 0.8 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowInput(true)}
+                    className="w-full pt-4 text-xl text-white/80 hover:text-white transition-colors"
                   >
-                    <span className={`font-medium ${task.done ? 'line-through text-white/40' : 'text-white'}`}>
-                      {task.text}
-                    </span>
-                    <div className="flex items-center space-x-3">
-                        <motion.button 
-                            onClick={() => startEditTask(task)} 
-                            whileHover={{ scale: 1.1, color: '#FCD34D' }}
-                            className="text-white/50"
-                        >
-                            <Edit2 size={ICON_SIZE - 4} />
-                        </motion.button>
-                        <motion.button 
-                            onClick={() => deleteTask(task.id)} 
-                            whileHover={{ scale: 1.1, color: '#EF4444' }}
-                            className="text-white/50"
-                        >
-                            <Trash2 size={ICON_SIZE - 4} />
-                        </motion.button>
-                        <motion.button 
-                            onClick={() => toggleTask(task.id)} 
-                            whileTap={{ scale: 0.9 }}
-                            className="transition-transform duration-100"
-                        >
-                            {task.done 
-                                ? <CheckSquare size={ICON_SIZE - 4} className="text-white" /> 
-                                : <Square size={ICON_SIZE - 4} className="text-white/50 hover:text-white" />
-                            }
-                        </motion.button>
-                    </div>
-                  </motion.div>
-                ))}
-
-                {/* ДОБАВЛЕНИЕ/РЕДАКТИРОВАНИЕ ЗАДАЧИ */}
-                <AnimatePresence mode="wait">
-                    {(showInput || editingTask) ? (
-                        <motion.input
-                            key="task-input"
-                            initial={{ opacity: 0, y: 10 }} // Изменение здесь
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }} // Изменение здесь
-                            autoFocus
-                            value={newTask}
-                            onChange={e => setNewTask(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && addTask()}
-                            onBlur={() => !newTask.trim() && !editingTask && setShowInput(false)}
-                            className={`w-full ${INPUT_STYLE} text-xl border-b border-white/50 mt-4`}
-                            placeholder={editingTask ? 'РЕДАКТИРОВАНИЕ...' : t.newTaskPlaceholder}
-                        />
-                    ) : (
-                        <motion.button
-                            key="add-task-btn"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            whileHover={{ opacity: 0.8 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setShowInput(true)}
-                            className="w-full pt-4 text-xl text-white/80 hover:text-white transition-colors"
-                        >
-                            {t.addTask}
-                        </motion.button>
-                    )}
-                </AnimatePresence>
+                    {t.addTask}
+                  </motion.button>
+                )}
               </AnimatePresence>
+            </AnimatePresence>
+          </div>
+          {/* ПРОГРЕСС БАР */}
+          <div className="w-full mt-6 flex flex-col items-center">
+            <div className="text-sm self-end mb-1">{progress}%</div>
+            <div className={`relative w-full h-4 ${BORDER_STYLE}`}>
+              <motion.div
+                key={progress}
+                className="absolute inset-0 bg-white"
+                initial={{ width: "0%" }}
+                animate={{ width: `${progress}%` }}
+                transition={{ type: "spring", stiffness: 140, damping: 24, mass: 1.3 }}
+              />
             </div>
-
-            {/* ПРОГРЕСС БАР */}
-            <div className="w-full mt-6 flex flex-col items-center">
-                <div className="text-sm self-end mb-1">{progress}%</div>
-                <div className={`relative w-full h-4 ${BORDER_STYLE}`}>
-                    <motion.div
-                        key={progress}
-                        className="absolute inset-0 bg-white"
-                        initial={{ width: "0%" }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ type: "spring", stiffness: 140, damping: 24, mass: 1.3 }}
-                    />
-                </div>
-            </div>
+          </div>
         </aside>
       </div>
+      
       <style>{`
-          .custom-scrollbar-minimal::-webkit-scrollbar {
-            width: 4px;
-          }
-          .custom-scrollbar-minimal::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          .custom-scrollbar-minimal::-webkit-scrollbar-thumb {
-            background-color: #ffffff40;
-            border-radius: 2px;
-          }
-          .custom-scrollbar-minimal::-webkit-scrollbar-thumb:hover {
-            background-color: #ffffff80;
-          }
-          /* Custom glow for interactive elements */
-          .hover\\:shadow-white-glow:hover {
-            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.2);
-          }
+        .custom-scrollbar-minimal::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar-minimal::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar-minimal::-webkit-scrollbar-thumb {
+          background-color: #ffffff40;
+          border-radius: 2px;
+        }
+        .custom-scrollbar-minimal::-webkit-scrollbar-thumb:hover {
+          background-color: #ffffff80;
+        }
+        /* Custom glow for interactive elements */
+        .hover\\:shadow-white-glow:hover {
+          box-shadow: 0 0 5px rgba(255, 255, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+        /* ✅ 🔥 АНИМАЦИИ ДЛЯ ПОГОДЫ */
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: .5; }
+        }
       `}</style>
     </div>
   );
